@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 260" width="640" height="260" role="img">
+<defs>
+<linearGradient id="i1" x1="0" y1="1" x2="0" y2="0">
+<stop offset="0" stop-color="hsl(140,78%,25%)"/><stop offset="1" stop-color="hsl(140,58%,55%)"/>
+</linearGradient>
+<marker id="i2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="hsl(140,78%,25%)"/>
+</marker>
+</defs>
+	<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="20" y="20" width="600" height="220" rx="10" fill="none" stroke="hsl(140,58%,55%)" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="30" y="45" font-size="14" fill="hsl(140,78%,25%)">閉域網（インターネット非接続）</text>
+<rect x="60" y="70" width="150" height="50" rx="8" fill="url(#i1)"/>
+<text x="135" y="100" font-size="13" fill="#fff" text-anchor="middle">PC-1内hub</text>
+<rect x="430" y="70" width="150" height="50" rx="8" fill="url(#i1)"/>
+<text x="505" y="100" font-size="13" fill="#fff" text-anchor="middle">PC-2内hub</text>
+<rect x="220" y="170" width="200" height="60" rx="8" fill="url(#i1)"/>
+<text x="320" y="205" font-size="14" fill="#fff" text-anchor="middle">LAN内hub</text>
+<line x1="150" y1="120" x2="290" y2="170" stroke="hsl(140,78%,25%)" stroke-width="2" marker-end="url(#i2)"/>
+<line x1="490" y1="120" x2="360" y2="170" stroke="hsl(140,78%,25%)" stroke-width="2" marker-end="url(#i2)"/>
+<text x="320" y="30" font-size="12" fill="hsl(140,78%,25%)" text-anchor="middle">クラウドhubへの経路そのものが無い</text>
+</svg>

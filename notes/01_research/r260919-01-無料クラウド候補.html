@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>hub を動かす無料クラウド候補の調査</title>
+<style>
+:root {
+	--navy1: #12224d; --navy2: #2f5fbf; --ink: #1c2330; --ink-soft: #4a5568;
+	--line: #d9dfe8; --code-bg: #f4f6fa; --accent: #12224d; --accent2: #2f5fbf; --soft: #f2f5fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #f7f9fc; color: var(--ink); font-family: "Segoe UI","Meiryo",sans-serif; font-size: 15.5px; line-height: 1.85; }
+.wrap { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
+.titlebar { background: linear-gradient(135deg, var(--navy1), var(--navy2)); color: #fff; padding: 34px 30px 30px; }
+.titlebar .inner { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
+.titlebar h1 { font-size: 1.9em; margin: 0 0 8px; color: #fff; }
+.titlebar .lead { font-size: .95em; opacity: .9; }
+.titlebar .date { font-size: .85em; opacity: .8; margin-top: 6px; }
+a { color: var(--navy2); }
+a.doclink { display: inline-block; padding: 4px 12px; border-radius: 6px; background: linear-gradient(100deg, var(--navy1), var(--navy2)); color: #fff; text-decoration: none; font-size: .9em; }
+section { margin: 34px 0; padding: 4px 26px 26px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); background: linear-gradient(180deg, var(--soft), #fff); }
+section h1 { background: linear-gradient(100deg, var(--accent), var(--accent2)); color: #fff; padding: 14px 20px; margin: 26px 0 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.15); font-size: 1.4em; }
+h2 { border-left: 6px solid var(--accent2); padding: 6px 12px; margin: 30px 0 12px; background: linear-gradient(90deg, var(--soft), #fff); font-size: 1.15em; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+th { background: linear-gradient(100deg, var(--accent), var(--accent2)); color: #fff; padding: 9px 12px; text-align: left; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+.callout { border-left: 6px solid var(--accent); background: linear-gradient(180deg, var(--soft), #fff); border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 16px 0; }
+.callout strong { color: var(--accent); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 6px; color: #fff; font-size: .85em; white-space: nowrap; }
+.b-ok { background: linear-gradient(100deg, #1d7a3c, #45b56c); }
+.b-ng { background: linear-gradient(100deg, #a51f22, #e05a5c); }
+.b-warn { background: linear-gradient(100deg, #b8620a, #f0a548); }
+.b-none { background: linear-gradient(100deg, #5a6472, #97a1ae); }
+footer { padding: 18px 30px 30px; text-align: left; color: var(--ink-soft); font-size: .85em; }
+.ch01 { --accent: hsl(280,78%,25%); --accent2: hsl(280,58%,55%); --soft: hsl(280,28%,95%); }
+.ch02 { --accent: hsl(186.7,78%,25%); --accent2: hsl(186.7,58%,55%); --soft: hsl(186.7,28%,95%); }
+.ch03 { --accent: hsl(93.3,78%,25%); --accent2: hsl(93.3,58%,55%); --soft: hsl(93.3,28%,95%); }
+.ch04 { --accent: hsl(0,78%,25%); --accent2: hsl(0,58%,55%); --soft: hsl(0,28%,95%); }
+</style>
+</head>
+<body>
+<div class="titlebar"><div class="inner">
+<h1>hub を動かす無料クラウド候補の調査</h1>
+<div class="lead">静かなら止まり、リクエストが来たら立ち上がる（scale-to-zero）無料サービスの比較</div>
+<div class="date">📅 作成: 2026-09-19 / 更新: 2026-09-24</div>
+</div></div>
+
+<div class="wrap">
+
+<p><a class="doclink" href="../../README.html">⌂</a></p>
+
+<section class="ch01">
+<h1>調べた観点</h1>
+<ul>
+<li><strong>scale-to-zero</strong>: 待受け中は課金・稼働ゼロで、リクエストが来たら自動起動するか</li>
+<li><strong>永続化</strong>: identities・tokens（<a href="../10_plan/p260919-01-全体構想.html">全体構想</a>参照）を保存し続けられるDBが、無料のまま持つか</li>
+<li><strong>クレジットカード要否</strong>: 個人利用として登録の敷居</li>
+<li><strong>コード変更の要否</strong>: 素のNode.jsプロセスのまま動くか、専用ランタイム（Workers等）への書き換えが要るか</li>
+</ul>
+<div class="callout"><strong>単純なGCE/EC2を除外する理由。</strong>常時起動の仮想マシンは「静かにしていても課金され続ける」ため、今回の狙い（休んでいれば無料）に合わない。</div>
+</section>
+
+<section class="ch02">
+<h1>候補比較</h1>
+<div class="tablewrap">
+<table>
+<tr><th>候補</th><th>方式</th><th>無料枠</th><th>クレカ</th><th>コード変更</th><th>注意点</th></tr>
+<tr><td><strong>Google Cloud Run</strong></td><td>コンテナ、scale-to-zero</td><td>月200万リクエスト・36万vCPU秒 等（常時無料枠）</td><td><span class="badge b-warn">要</span></td><td><span class="badge b-ok">不要</span>（Dockerでそのまま）</td><td>永続ディスクが無いため、DBは外部サービスに出す必要がある</td></tr>
+<tr><td>Google Cloud Functions (2nd gen)</td><td>関数、scale-to-zero</td><td>Cloud Runと同一基盤・同等の無料枠</td><td><span class="badge b-warn">要</span></td><td><span class="badge b-warn">一部</span>（ハンドラ形式に合わせる）</td><td>実体はCloud Run。単体で選ぶ理由は薄い</td></tr>
+<tr><td>Cloudflare Workers + Durable Objects</td><td>V8アイソレート（エッジ）＋Durable Objects（SQLite内蔵ストレージ）</td><td>Workers無料枠＋DO無料枠（日次10万リクエスト、1GBまで）</td><td><span class="badge b-ok">不要</span></td><td><span class="badge b-ng">要</span>（Node.jsの長時間プロセス前提コードは書き直し）</td><td>WebSocketはDurable Objectsが無料プランでも使える（訂正: 当初「別料金」と見ていたが、無料プランでも利用可）</td></tr>
+<tr><td>Render（Freeプラン）</td><td>コンテナ、15分無操作でスリープ→次リクエストで起動（約1分）</td><td>750インスタンス時間/月</td><td><span class="badge b-ok">不要</span></td><td><span class="badge b-ok">不要</span></td><td>無料PostgreSQLは作成30日で失効。DBは別途用意が要る</td></tr>
+<tr><td>Fly.io</td><td>コンテナ</td><td><span class="badge b-ng">実質無し</span>（無料トライアルのみ）</td><td>—</td><td>—</td><td>2024年以降、新規アカウントの無料枠は廃止済み。候補から除外</td></tr>
+<tr><td>Turso（libSQL）</td><td>DBのみ（SQLite互換）</td><td>情報が資料間で食い違う（無料枠ありとする記事と、Hobbyが月$9有料化したとする記事が混在）</td><td>—</td><td>—</td><td><strong>要再確認</strong>。契約前に公式ダッシュボードで現在の条件を必ず見る</td></tr>
+</table>
+</div>
+<p class="callout"><strong>裏取りの状況。</strong>Cloud Run・Cloud Functions・Cloudflare（Workers/D1/Durable Objects）・Render は公式ドキュメントで確認済み。Fly.io も公式コミュニティ情報で確認済み（無料枠が無いこと）。Turso は情報源同士が矛盾しており、未確認として扱う。</p>
+</section>
+
+<section class="ch03">
+<h1>プッシュ通知はできるか</h1>
+<p>「静かにしていれば止まっているサーバーから、後で通知が飛んでくる」ことができるかという問いには、<strong>誰への通知か</strong>で答えが変わる。</p>
+
+<h2>3.1 エージェント間の通知（project-id・instance-id宛て）</h2>
+<p>これは <a href="../10_plan/p260919-01-全体構想.html">全体構想</a> の Messaging フェーズで使う、いわゆる ai-chat-lite の <code>wait</code>（長時間ポーリング）と同じ話になる。「サーバーが止まっている間に通知する」のではなく、<strong>クライアント側が接続を持ち、その接続が来た時点でサーバーが起きて応答する</strong>形になる。</p>
+<div class="tablewrap">
+<table>
+<tr><th>候補</th><th>長時間接続の可否</th><th>備考</th></tr>
+<tr><td>Google Cloud Run</td><td><span class="badge b-ok">可</span></td><td>WebSocket・HTTP長時間接続に対応（GA）。タイムアウトは既定5分、最大60分まで延長可。切れたら再接続する前提の設計にする</td></tr>
+<tr><td>Cloudflare Workers + Durable Objects</td><td><span class="badge b-ok">可</span></td><td>Durable Objects は無料プランでもWebSocketを扱える。インスタンスごとに状態（＝待受け中のカーソル位置）を保持できるので、instance_id単位のwaitと相性がよい</td></tr>
+<tr><td>Render（Free）</td><td><span class="badge b-ok">可</span></td><td>普通のNode.jsプロセスなのでWebSocket・長時間HTTPともそのまま動く。ただしスリープからの初回接続は約1分のコールドスタートが乗る</td></tr>
+</table>
+</div>
+<div class="callout"><strong>「本当のゼロ」ではない。</strong>待受け中の接続がある間はそのインスタンスは起きている（＝課金対象になり得る）。ai-chat-liteの<code>wait</code>が240秒ごとに区切って張り直す設計にしてあるのは、この種の環境でも扱いやすくするためでもある。</div>
+
+<h2>3.2 人間の端末への通知（スマホ・デスクトップ）</h2>
+<p>こちらは仕組みが根本的に違う。<strong>hub自身が起きていなくても送れる。</strong> Web Push（VAPID）やFCM・APNsは、ブラウザ・OSベンダーが運用する仲介サーバーに一度メッセージを預ける方式で、hubは「送りたくなったときだけ短時間起きて、仲介サーバーにPOSTする」だけでよい。受け手の端末は常時接続を保つ必要がなく、hubも常時起動している必要がない。</p>
+<div class="callout"><strong>scale-to-zeroとの相性がよい。</strong>エージェント間通知（3.1）が「待つ側が接続を保つ」方式なのに対し、人間向け通知は「送る側が起きた瞬間に済ませる」方式なので、hubが眠っている時間が長いほど有利という、この構想の狙いと一致する。</div>
+
+<p><strong>今回のスコープには含めない。</strong>認証・セキュリティ基盤（MVP）にもロードマップの各フェーズにも今のところ登場しない。将来、人間への通知（レビュー依頼・障害通知等）を作る段になったら、Web Push採用を検討する。</p>
+</section>
+
+<section class="ch04">
+<h1>所感（決定ではない）</h1>
+<table>
+<tr><th>方針</th><th>組み合わせ</th><th>向いている場面</th></tr>
+<tr><td>A. コード変更を避ける</td><td>Render（Free） ＋ 外部DB（要選定）</td><td>今の設計（Node.js＋SQLite想定）をほぼそのまま動かしたい。ただしDBの永続先は別途決める必要がある</td></tr>
+<tr><td>B. 無料枠の厚さを取る</td><td>Google Cloud Run ＋ Firestore等の外部DB</td><td>クレジットカード登録は許容でき、長く動かす前提なら最も無料枠が手厚い</td></tr>
+<tr><td>C. クレカ不要を徹底する</td><td>Cloudflare Workers ＋ Durable Objects</td><td>個人の検証用途に割り切り、hubをWorkers向けに書き直す前提を受け入れる。WebSocketも無料枠内で使える</td></tr>
+</table>
+<div class="callout"><strong>まだ選ばない。</strong>本書はロードマップの「4. LAN/クラウド対応」フェーズで使う調査であり、MVP（認証・セキュリティ基盤）の実装先には影響しない。どの方針にするかは、そのフェーズの計画時に改めて決める。</div>
+</section>
+
+</div>
+<footer><a class="doclink" href="../../README.html">⌂</a></footer>
+</body>
+</html>

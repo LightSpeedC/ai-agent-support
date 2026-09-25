@@ -1,0 +1,270 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ai-agent-support 全体構想と最初のMVP計画</title>
+<style>
+:root {
+	--navy1: #12224d;
+	--navy2: #2f5fbf;
+	--ink: #1c2330;
+	--ink-soft: #4a5568;
+	--line: #d9dfe8;
+	--code-bg: #f4f6fa;
+	--accent: #12224d;
+	--accent2: #2f5fbf;
+	--soft: #f2f5fb;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0;
+	background: #f7f9fc;
+	color: var(--ink);
+	font-family: "Segoe UI", "Meiryo", sans-serif;
+	font-size: 15.5px;
+	line-height: 1.85;
+}
+.wrap { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
+.titlebar { background: linear-gradient(135deg, var(--navy1), var(--navy2)); color: #fff; padding: 34px 30px 30px; }
+.titlebar .inner { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
+.titlebar h1 { font-size: 1.9em; margin: 0 0 8px; color: #fff; }
+.titlebar .lead { font-size: 0.95em; opacity: 0.9; }
+.titlebar .date { font-size: 0.85em; opacity: 0.8; margin-top: 6px; }
+a { color: var(--navy2); }
+a.doclink {
+	display: inline-block;
+	padding: 4px 12px;
+	border-radius: 6px;
+	background: linear-gradient(100deg, var(--navy1), var(--navy2));
+	color: #fff;
+	text-decoration: none;
+	font-size: 0.9em;
+}
+section { margin: 34px 0; padding: 4px 26px 26px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); background: linear-gradient(180deg, var(--soft), #fff); }
+section h1 {
+	background: linear-gradient(100deg, var(--accent), var(--accent2));
+	color: #fff;
+	padding: 14px 20px;
+	margin: 26px 0 20px;
+	border-radius: 8px;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+	font-size: 1.4em;
+}
+h2 {
+	border-left: 6px solid var(--accent2);
+	padding: 6px 12px;
+	margin: 30px 0 12px;
+	background: linear-gradient(90deg, var(--soft), #fff);
+	font-size: 1.15em;
+}
+h3 {
+	border-bottom: 2px dotted var(--accent2);
+	display: inline-block;
+	padding-bottom: 3px;
+	margin: 20px 0 8px;
+	font-size: 1.02em;
+}
+pre {
+	background: var(--code-bg);
+	border-left: 5px solid var(--accent2);
+	padding: 13px 16px;
+	overflow-x: auto;
+	border-radius: 0 6px 6px 0;
+	font-size: 0.92em;
+}
+code {
+	background: var(--code-bg);
+	border: 1px solid var(--line);
+	color: #17335f;
+	padding: 1px 5px;
+	border-radius: 4px;
+}
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+th { background: linear-gradient(100deg, var(--accent), var(--accent2)); color: #fff; padding: 9px 12px; text-align: left; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+td.num { text-align: right; }
+td.nowrap { white-space: nowrap; }
+.callout { border-left: 6px solid var(--accent); background: linear-gradient(180deg, var(--soft), #fff); border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 16px 0; }
+.callout strong { color: var(--accent); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 6px; color: #fff; font-size: 0.85em; white-space: nowrap; }
+.b-ok { background: linear-gradient(100deg, #1d7a3c, #45b56c); }
+.b-warn { background: linear-gradient(100deg, #b8620a, #f0a548); }
+.b-none { background: linear-gradient(100deg, #5a6472, #97a1ae); }
+footer { padding: 18px 30px 30px; text-align: left; color: var(--ink-soft); font-size: 0.85em; }
+
+.ch01 { --accent: hsl(280, 78%, 25%); --accent2: hsl(280, 58%, 55%); --soft: hsl(280, 28%, 95%); }
+.ch02 { --accent: hsl(186.7, 78%, 25%); --accent2: hsl(186.7, 58%, 55%); --soft: hsl(186.7, 28%, 95%); }
+.ch03 { --accent: hsl(93.3, 78%, 25%); --accent2: hsl(93.3, 58%, 55%); --soft: hsl(93.3, 28%, 95%); }
+.ch04 { --accent: hsl(0, 78%, 25%); --accent2: hsl(0, 58%, 55%); --soft: hsl(0, 28%, 95%); }
+</style>
+</head>
+<body>
+<div class="titlebar">
+<div class="inner">
+<h1>ai-agent-support 全体構想と最初のMVP計画</h1>
+<div class="lead">AIエージェント間の通信・ファイル受け渡し・チケット管理までを見据えた基盤の、最初の一歩</div>
+<div class="date">📅 作成: 2026-09-19 / 更新: 2026-09-24</div>
+</div>
+</div>
+
+<div class="wrap">
+
+<p><a class="doclink" href="../../README.html">⌂</a></p>
+
+<section class="ch01">
+<h1>背景と全体構想</h1>
+
+<div class="callout"><strong>MVP（Minimum Viable Product）とは、実用最小限の製品のこと。</strong>構想の全部を一度に作らず、まず動く最小限の一部分だけを作って試す考え方。本書では「認証・セキュリティ基盤」を最初のMVPとし、メッセージングやファイル受け渡しは含めない。</div>
+
+<h2>1.1 目指すもの</h2>
+<p>複数のAIエージェント（Claude Codeセッション等）が、プロジェクトフォルダ名から取った <code>:project-id:</code> を宛先・送信元の識別子として使い、次のことをできるようにする。</p>
+<ul>
+<li>エージェント間のメッセージ通信</li>
+<li>エージェント間のファイル受け渡し</li>
+<li>認証・アクセス制御によるセキュリティの強化</li>
+<li>ローカルPC・LAN内サーバー・クラウドサービスのどこでも動く配置の柔軟性</li>
+<li>（将来）Mattermostのような運用中チャットの巻き取り</li>
+<li>（将来）Redmineのようなチケット管理</li>
+</ul>
+
+<div class="callout"><strong>構想は大きく、最初は小さく。</strong>すべてを一度に作らず、後から積み増せる土台から着手する。</div>
+
+<h2>1.2 既存資産との関係</h2>
+<p>ai-chat-lite（ローカルPC内のAI間チャット、Node.js＋SQLite、ポート常駐サーバー）が既にエージェント間メッセージングの実運用を持っている。ai-agent-support を将来的な統合・置き換え先とする方向で考えるが、<strong>今回のMVPでは ai-chat-lite には一切手を入れない</strong>。認証・セキュリティ基盤を独立したモジュールとして作り、統合の判断は基盤が固まってから改めて行う。</p>
+
+<h2>1.3 進め方の原則</h2>
+<table>
+<tr><th>原則</th><th>内容</th></tr>
+<tr><td>段階分割</td><td>認証基盤 → メッセージング → ファイル受け渡し → LAN/クラウド対応 → 外部連携、の順に積む</td></tr>
+<tr><td>後方互換より前方設計</td><td>今回作る認証層は「今は使わないメッセージング・ファイル・チケットの各モジュールが後から乗る」ことを前提にインターフェースを決める</td></tr>
+<tr><td>他プロジェクト不可侵</td><td>ai-chat-lite・Mattermost・Redmineの実体は直さない。連携は外側から行う</td></tr>
+<tr><td>OS非依存</td><td>Windows・Mac・Linuxのどこでも同じコードで動く（2.4節参照）</td></tr>
+<tr><td>エージェント非依存</td><td>Claude Code・Codex等の特定のエージェント製品に依存しない。エージェント種別は固定の許可リストを持たず、名乗った略称をそのまま受け付ける（2.2節参照）</td></tr>
+<tr><td>ネット接続に依存しない</td><td>外部の認証局・SaaS・DNS解決に頼らず、閉域網（インターネットに繋がらないLAN）だけでも身元登録から認証までが完結する。将来ローカルLLMでエージェントを動かす運用を見込む</td></tr>
+</table>
+</section>
+
+<section class="ch02">
+<h1>全体アーキテクチャ（案）</h1>
+
+<h2>2.1 レイヤー構成</h2>
+<table>
+<tr><th>層</th><th>役割</th><th>MVPでの状態</th></tr>
+<tr><td>Identity（身元）</td><td><code>:project-id:</code> ごとの鍵ペアを発行・管理する</td><td>今回作る</td></tr>
+<tr><td>Auth（認証）</td><td>身元の証明（署名）を検証し、短命トークンを発行する</td><td>今回作る</td></tr>
+<tr><td>Transport（通信路）</td><td>ローカル・LAN・クラウドのどこにサーバーを置くかを吸収する</td><td>今回はローカルのみ実装。設計だけLAN/クラウドを見込む</td></tr>
+<tr><td>Messaging（会話）</td><td>エージェント間のテキストメッセージ</td><td>次フェーズ</td></tr>
+<tr><td>File Transfer（受け渡し）</td><td>ファイルの送受信</td><td>次フェーズ</td></tr>
+<tr><td>Bridge（外部連携）</td><td>Mattermost等の巻き取り</td><td>将来</td></tr>
+<tr><td>Ticket（課題管理）</td><td>Redmineのようなチケット管理</td><td>将来</td></tr>
+</table>
+
+<h2>2.2 身元の粒度: instance_id を主キーにする</h2>
+<div class="callout"><strong>ai-chat-lite が避けていた問題。</strong>project-id（プロジェクトフォルダ名）は一意にならない。同じプロジェクトで Claude Code を2つ以上起動することも、Claude Code と Codex を同時に起動することも実際に行われる。project-id を身元の主キーにすると、複数セッションが同じ鍵を共有する（または後から起動した方が上書きする）ことになり、1セッションの侵害が他の正常なセッションまで巻き込んで失効させる原因になる。</div>
+<p>そこで身元の主キーは起動ごとに生成する <strong>instance_id</strong> とし、project_id は「どのプロジェクトの代理か」を示すラベルとして登録時に添える二階層構成にする。同じ project_id に複数の instance が共存でき、失効も instance 単位で行える。</p>
+
+<h3>エージェント種別の略称</h3>
+<p>instance は登録時に、project_id に加えて<strong>自分がどのエージェントか</strong>を略称で名乗る。</p>
+<table>
+<tr><th>略称</th><th>エージェント</th></tr>
+<tr><td><code>cc</code></td><td>Claude Code</td></tr>
+<tr><td><code>cx</code></td><td>Codex</td></tr>
+<tr><td><code>ag</code></td><td>Antigravity CLI</td></tr>
+</table>
+<p>一覧に無いエージェントは、小文字英数字2〜4文字程度の略称を新たに名乗ってよい（hub側で固定の許可リストは持たない）。instance_id 自体は <code>project_id + agent_type + 起動ごとの乱数</code> から組み立てる（例: <code>ai-agent-support#cc#a3f9</code>）。</p>
+<div class="callout"><strong>「#」の意味はここでは区切り文字。</strong><a href="../10_plan/p260923-01-リソース抽象化構想.html">リソース抽象化構想</a>の行範囲指定（<code>#L1-20</code>）とは別の用法であり、<code>:project-id:</code> と組み合わせて書くのは行範囲指定の方だけなので、実際の記述上で両者が混在することはない。</div>
+
+<h2>2.3 認証の仕組み（MVPの中心）</h2>
+<ol>
+<li>起動した instance は鍵ペア（Ed25519）をローカルで生成する。秘密鍵はそのマシンのユーザープロファイル配下に置き、Gitには入れない</li>
+<li>project_id・agent_type・公開鍵を hub（認証サーバー）に登録する（<code>register</code>）。hub が instance_id を発行して返す</li>
+<li>接続時、hub がチャレンジ（乱数）を渡す。クライアントは秘密鍵で署名して返す（<code>login</code>）</li>
+<li>hub は署名を公開鍵で検証し、短命の署名付きトークン（JWT相当。project_id と instance_id の両方を含む）を発行する</li>
+<li>以降、メッセージング・ファイル受け渡し等の各モジュールは、このトークンをそのまま「どのプロジェクトの、どのインスタンスからのリクエストか」の根拠として使う（各モジュールが個別に鍵を扱わずに済む）</li>
+</ol>
+
+<div class="callout"><strong>パスワードやAPIキーの平文共有を避ける。</strong>秘密鍵はマシンから出さず、hub には公開鍵と署名しか渡らない設計にする。</div>
+
+<h2>2.4 配置の考え方</h2>
+<p>hub（認証サーバー）は接続先（<code>--port</code> か <code>--url</code>）を変えるだけで、同じコードのまま3つのトポロジーに対応する。</p>
+<table>
+<tr><th>トポロジー</th><th>hub の置き場所</th><th>使う場面</th></tr>
+<tr><td>同一PC内</td><td>localhost 上のhub（例: <code>127.0.0.1:8890</code>）</td><td>1台のPC内で複数プロジェクト・複数instanceが相互通信する、最も基本の形</td></tr>
+<tr><td>LAN内</td><td>LAN内の1台をhubにし、各PCがそのIP・ホスト名へ接続</td><td>同じ拠点内の複数PCにまたがる相互通信</td></tr>
+<tr><td>クラウド</td><td>クラウド上の1台をhubにし、各PCがドメイン経由で接続</td><td>拠点をまたぐ相互通信。家・会社などネットに繋がる開発環境間で使う</td></tr>
+<tr><td>閉域網（インターネット非接続）</td><td>LAN内の1台をhubにし、外部への通信を一切行わない</td><td>将来、ローカルLLMでエージェントを動かす運用。クラウドAPIに頼らずLAN内だけで完結させたい場合</td></tr>
+</table>
+<div class="callout"><strong>4つは「どこにhubを置くか」の違いでしかない。</strong>project・instance側のコードは接続先の設定を変えるだけで、実装を分けない。LAN・クラウドでは通信が信頼できない経路を通るため、認証（2.3節）に加えてTLSによる経路の暗号化を必須にする。閉域網では外部の認証局・NTP・DNS等に頼れないため、hub自身が鍵の発行から検証まで自己完結できることを前提にする（2.3節の設計はこの前提を満たす）。</div>
+
+<p>今すぐ全部には対応しないが、後から動かせるように分けておく。</p>
+<table>
+<tr><th>配置</th><th>MVPでの対応</th><th>後の対応方針</th></tr>
+<tr><td>同一PC内（Windows）</td><td><span class="badge b-ok">対応</span></td><td>そのまま</td></tr>
+<tr><td>同一PC内（Mac）</td><td><span class="badge b-none">未対応</span></td><td>Node.js標準APIの範囲に留め、Windows固有処理（レジストリ・SJIS等）を作らない</td></tr>
+<tr><td>LAN内</td><td><span class="badge b-none">未対応</span></td><td>bindアドレスとTLS設定を外出しにするだけで到達できる作りにする</td></tr>
+<tr><td>クラウド</td><td><span class="badge b-none">未対応</span></td><td>鍵・DBの保存先を環境変数で差し替え可能にする。OS依存処理を作らない</td></tr>
+</table>
+<p>この方針を守るため、MVPの実装言語は <strong>Node.js（TypeScript優先。ts &gt; mjs &gt; cjsの順、共通ルール「使用言語（Node / Bun）」に従う）</strong> を採用する（Windows/Mac/Linuxで同一コードが動き、ai-chat-lite との将来統合にも支障がない）。</p>
+</section>
+
+<section class="ch03">
+<h1>最初のMVP: 認証・セキュリティ基盤</h1>
+
+<h2>3.1 スコープ</h2>
+<table>
+<tr><th>含む</th><th>含まない（次フェーズ以降）</th></tr>
+<tr><td>instance ごとの鍵ペア生成・保管</td><td>メッセージ本文の送受信</td></tr>
+<tr><td>project_id・agent_type を添えた公開鍵の登録（register）</td><td>ファイルの送受信</td></tr>
+<tr><td>チャレンジ・レスポンスによるログイン</td><td>LAN/クラウドへの実配置</td></tr>
+<tr><td>短命トークンの発行・検証・instance単位の失効</td><td>Mattermost/Redmine連携</td></tr>
+<tr><td>CLIでの動作確認手段</td><td>Webの管理画面</td></tr>
+</table>
+
+<h2>3.2 想定するCLI（動作確認用・仮）</h2>
+<pre><code class="language-powershell">agentauth keygen :project-a: --agent-type cc     # 鍵ペアを生成しローカルに保存
+agentauth register :project-a: --agent-type cc -p 8890
+                                                  # 公開鍵をhubに登録し instance_id を受け取る
+agentauth login &lt;instance_id&gt; -p 8890            # チャレンジに署名し、トークンを取得
+agentauth verify &lt;token&gt; -p 8890                 # トークンの有効性を確認（動作確認用）
+agentauth revoke &lt;instance_id&gt; -p 8890           # そのinstanceだけを失効させる
+</code></pre>
+
+<h2>3.3 データモデル（案）</h2>
+<table>
+<tr><th>テーブル</th><th>主な列</th></tr>
+<tr><td>identities</td><td>instance_id, project_id, agent_type, public_key, registered_at, revoked_at</td></tr>
+<tr><td>tokens</td><td>token_id, instance_id, project_id, issued_at, expires_at, revoked_at</td></tr>
+</table>
+
+<h2>3.4 完了の判定基準</h2>
+<ul>
+<li>同じ project_id・異なる agent_type（例: cc と cx）で2つの instance を登録し、それぞれ独立した instance_id が発行される</li>
+<li>正しい秘密鍵で login するとトークンが発行される</li>
+<li>他人の instance_id を名乗って login しようとすると拒否される（署名検証で弾く）</li>
+<li>発行したトークンが有効期限切れ後に verify で拒否される</li>
+<li>同一 project_id 内の一方の instance だけを revoke しても、もう一方の instance は使い続けられる</li>
+<li>テストが `tools/40_test/` から一括実行できる</li>
+</ul>
+</section>
+
+<section class="ch04">
+<h1>この先のロードマップ（見通し）</h1>
+
+<table>
+<tr><th>順番</th><th>フェーズ</th><th>内容</th></tr>
+<tr><td class="num">1</td><td>認証・セキュリティ基盤</td><td>本計画のMVP。今回着手する</td></tr>
+<tr><td class="num">2</td><td>メッセージング</td><td>project-id間のテキスト送受信。認証トークン必須。ai-chat-liteとの統合可否をここで判断する</td></tr>
+<tr><td class="num">3</td><td>ファイル受け渡し</td><td>認証済みトークンでのアップロード・ダウンロード</td></tr>
+<tr><td class="num">4</td><td>LAN/クラウド対応</td><td>TLS・bindアドレス・保存先の外出し設定を実配置で検証</td></tr>
+<tr><td class="num">5〜</td><td>リソース抽象化基盤・チャットアダプタ・チケットアダプタ</td><td>詳細は <a href="../10_plan/p260923-01-リソース抽象化構想.html">p260923-01-リソース抽象化構想.html</a> の3章を正とする</td></tr>
+</table>
+
+<div class="callout"><strong>各フェーズの開始前に、そのフェーズだけの計画書を <code>notes/10_plan/</code> に作り、承認を得てから着手する。</strong>本書は全体の見取り図であり、実装の詳細はフェーズごとの計画書に書く。フェーズ5以降の割り振りは <code>p260923-01</code> 側で管理し、本書では書き直さない。</div>
+</section>
+
+</div>
+<footer><a class="doclink" href="../../README.html">⌂</a></footer>
+</body>
+</html>

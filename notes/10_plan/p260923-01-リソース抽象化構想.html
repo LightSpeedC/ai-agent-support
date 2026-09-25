@@ -1,0 +1,415 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ai-agent-support リソース抽象化構想（プロジェクト参照の記法とhub解決）</title>
+<style>
+:root {
+	--navy1: #12224d; --navy2: #2f5fbf; --ink: #1c2330; --ink-soft: #4a5568;
+	--line: #d9dfe8; --code-bg: #f4f6fa; --accent: #12224d; --accent2: #2f5fbf; --soft: #f2f5fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #f7f9fc; color: var(--ink); font-family: "Segoe UI","Meiryo",sans-serif; font-size: 15.5px; line-height: 1.85; }
+.wrap { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
+.titlebar { background: linear-gradient(135deg, var(--navy1), var(--navy2)); color: #fff; padding: 34px 30px 30px; }
+.titlebar .inner { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
+.titlebar h1 { font-size: 1.9em; margin: 0 0 8px; color: #fff; }
+.titlebar .lead { font-size: .95em; opacity: .9; }
+.titlebar .date { font-size: .85em; opacity: .8; margin-top: 6px; }
+a { color: var(--navy2); }
+a.doclink { display: inline-block; padding: 4px 12px; border-radius: 6px; background: linear-gradient(100deg, var(--navy1), var(--navy2)); color: #fff; text-decoration: none; font-size: .9em; }
+section { margin: 34px 0; padding: 4px 26px 26px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); background: linear-gradient(180deg, var(--soft), #fff); }
+section h1 { background: linear-gradient(100deg, var(--accent), var(--accent2)); color: #fff; padding: 14px 20px; margin: 26px 0 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.15); font-size: 1.4em; }
+h2 { border-left: 6px solid var(--accent2); padding: 6px 12px; margin: 30px 0 12px; background: linear-gradient(90deg, var(--soft), #fff); font-size: 1.15em; }
+h3 { border-bottom: 2px dotted var(--accent2); display: inline-block; padding-bottom: 3px; margin: 20px 0 8px; font-size: 1.02em; }
+pre { background: var(--code-bg); border-left: 5px solid var(--accent2); padding: 13px 16px; overflow-x: auto; border-radius: 0 6px 6px 0; font-size: .92em; }
+code { background: var(--code-bg); border: 1px solid var(--line); color: #17335f; padding: 1px 5px; border-radius: 4px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+th { background: linear-gradient(100deg, var(--accent), var(--accent2)); color: #fff; padding: 9px 12px; text-align: left; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:nth-child(even) td { background: #fafbfe; }
+.callout { border-left: 6px solid var(--accent); background: linear-gradient(180deg, var(--soft), #fff); border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 16px 0; }
+.callout strong { color: var(--accent); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 6px; color: #fff; font-size: .85em; white-space: nowrap; }
+.b-ok { background: linear-gradient(100deg, #1d7a3c, #45b56c); }
+.b-warn { background: linear-gradient(100deg, #b8620a, #f0a548); }
+.b-none { background: linear-gradient(100deg, #5a6472, #97a1ae); }
+footer { padding: 18px 30px 30px; text-align: left; color: var(--ink-soft); font-size: .85em; }
+.ch01 { --accent: hsl(280,78%,25%); --accent2: hsl(280,58%,55%); --soft: hsl(280,28%,95%); }
+.ch02 { --accent: hsl(140,78%,25%); --accent2: hsl(140,58%,55%); --soft: hsl(140,28%,95%); }
+.ch03 { --accent: hsl(0,78%,25%); --accent2: hsl(0,58%,55%); --soft: hsl(0,28%,95%); }
+</style>
+</head>
+<body>
+<div class="titlebar"><div class="inner">
+<h1>リソース抽象化構想</h1>
+<div class="lead">プロジェクト間の参照（ファイル・チャット・チケット）を、環境を問わない記法とhub解決で統一する</div>
+<div class="date">📅 作成: 2026-09-23 / 更新: 2026-09-24</div>
+</div></div>
+
+<div class="wrap">
+
+<p><a class="doclink" href="../../README.html">⌂</a></p>
+
+<section class="ch01">
+<h1>背景と目的</h1>
+
+<p><a class="doclink" href="p260919-01-全体構想.html">全体構想とMVP計画</a>で決めた project_id・instance_id・hub の仕組みを、ファイル参照とチャット・チケットの参照にも広げる。</p>
+
+<h2>1.1 いま抱えている環境の多様さ</h2>
+<ul>
+<li>ツールは <code>ai-agent-tools</code>・<code>ai-chat-lite</code>・<code>PlayWright</code> を既に運用中。<code>ai-agent-manager</code>（Claude Code等のエージェントを起動・終了するツール）を構想中</li>
+<li>場所は家・会社、OSはWindows/Mac/Linuxと多様。ツール・ルールをまたいで共有したい</li>
+<li>ネットワークは閉域網（インターネット非接続のLAN）とインターネット接続環境の両方があり得る</li>
+<li>チャット・チケット管理は、閉域網では Mattermost・Redmine・GitLab、インターネット接続環境では GitHub のように、<strong>置かれた環境によって実体のサービスが変わる</strong></li>
+</ul>
+
+<h2>1.2 解きたい問題</h2>
+<p>「よそのプロジェクトの何かを参照する」ときの書き方が、環境ごとにバラバラになってしまう。ローカルなら絶対パス、LANならUNCパスやIP、クラウドならURL、チャットならMattermostかai-chat-liteか、チケットならRedmineかGitHubか。<strong>参照する側のコード・コマンドが、置かれた環境を意識しなくて済むようにする</strong>のが狙い。</p>
+
+<div class="callout"><strong>今回決めたのはMVP後の設計方針。</strong>実装はMVP（認証・セキュリティ基盤）の後、ロードマップに新しいフェーズとして積む。今回はまだコードを書かない。</div>
+</section>
+
+<section class="ch02">
+<h1>設計方針</h1>
+
+<h2>2.1 参照記法: 「自分」と「よそ」で書き分ける</h2>
+<p>ai-chat-lite が使っている「コロンで囲んだID」を、チャットの参加者IDだけでなく、<strong>その先にパスを続けられるリソース参照の記法</strong>として拡張する。ただし参照先が「自分のプロジェクト」か「よそのプロジェクト」かで、記法と解決の仕方を分ける。</p>
+<pre><code class="language-text">::/abc/xyz.txt                          自分のプロジェクトルートを起点（hubに聞かない）
+:other-project:/notes/40_issues/issues.html   よそのプロジェクト（hubに問い合わせる）
+</code></pre>
+<table>
+<tr><th>記法</th><th>指す先</th><th>解決方法</th></tr>
+<tr><td><code>::/path</code></td><td>自分のプロジェクトルートからの相対パス</td><td><strong>hubに聞かず、ローカルだけで解決する</strong>。従来の <code>N:/my-project/abc/xyz.txt</code>・<code>C:/work/my-project/abc/xyz.txt</code> のように置き場所（ドライブ・subst・実体パス）ごとに書き分けていたものを、<code>::/abc/xyz.txt</code> の1通りに統一する</td></tr>
+<tr><td><code>:project-id:/path</code></td><td>よそのプロジェクトのリソース（file/chat/ticket）</td><td>hubに問い合わせて解決する（2.2節）</td></tr>
+</table>
+<div class="callout"><strong>chrootのように閉じ込める。</strong><code>::</code> は自分のプロジェクトルートを起点にし、そこから上には出られない。<code>::/../secret</code> のように <code>..</code> でルートの外へ出ようとする参照は、解決する側が正規化した時点で拒否する。<strong>「自分の外」を指したくなったら <code>::</code> ではなく <code>:project-id:</code> を使う</strong>、という書き分けそのものが、意図しない越境アクセスへの歯止めになる。</div>
+<p>「自分のプロジェクトルート」がどこかは、実行中のプロジェクトフォルダ（カレントディレクトリから上へ辿って見つかる、そのプロジェクトを示す目印）から、ツールがローカルに判定する。hubを含め、ネットワークには一切問い合わせない。閉域網は元より、hubそのものが落ちていても <code>::</code> は解決できる。</p>
+
+<h3>2.1.1 短縮形 <code>./path</code></h3>
+<p><code>::/path</code> はよく使うため、<code>./path</code> を同じ意味の短縮形として受け付ける。</p>
+<pre><code class="language-text">./abc/xyz.txt   ==  ::/abc/xyz.txt   （自分のプロジェクトルート起点）
+</code></pre>
+<div class="callout"><strong>OSの「カレントディレクトリ」とは意味が違う。</strong>シェルや一般のツールでは <code>.</code> は実行中のカレントディレクトリを指すが、ここでの <code>./path</code> は<strong>カレントディレクトリに関係なく、常にプロジェクトルートを起点にする</strong>。プロジェクトのサブフォルダで実行していても、<code>./abc</code> はそのサブフォルダ配下ではなくプロジェクトルート直下の <code>abc</code> を指す。<code>text</code>ファミリー（2.8節）などこの記法を解釈するツールの中でだけ通用する約束であり、OS標準のコマンドには影響しない。</div>
+
+<h3>2.1.2 行範囲の指定 <code>#L1-20</code></h3>
+<p>GitLab・GitHubがWeb画面で使っている「ファイル名の後ろに <code>#L1-20</code> を付けて行範囲を指す」書き方を、そのまま踏襲する。</p>
+<pre><code class="language-text">::/README.html#L10          10行目だけ
+::/README.html#L10-20       10〜20行目
+:other-project:/README.html#L1-5   よそのプロジェクトでも同じ書き方
+</code></pre>
+<div class="callout"><strong>コマンドラインでは必ずクォートする。</strong><code>#</code>はPowerShellではクォートしない限りコメントの開始と解釈される。<code>text</code>ファミリー（2.8節）でこの書き方を渡すときは、ダブルクォートで全体を囲む（「CLIの引数はダブルクォートで囲む」に従う）。ドキュメント中の地の文やチャットの発言では、この制約は関係ない。</div>
+<svg viewBox="0 0 640 220" style="max-width: 100%; height: auto;">
+<defs>
+<linearGradient id="g-p260923-21-box" x1="0" y1="1" x2="0" y2="0">
+<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/>
+</linearGradient>
+<marker id="arrow-p260923-21" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+</marker>
+</defs>
+<text x="150" y="30" font-size="14" fill="var(--accent)" text-anchor="middle">::/abc/xyz.txt（自分）</text>
+<rect x="60" y="50" width="180" height="50" rx="8" fill="url(#g-p260923-21-box)"/>
+<text x="150" y="80" font-size="13" fill="#fff" text-anchor="middle">my-project</text>
+<line x1="150" y1="100" x2="150" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-21)"/>
+<rect x="70" y="155" width="160" height="45" rx="8" fill="url(#g-p260923-21-box)"/>
+<text x="150" y="182" font-size="12" fill="#fff" text-anchor="middle">abc/xyz.txt（ローカル）</text>
+<text x="30" y="140" font-size="11" fill="var(--accent)">hubを経由しない</text>
+
+<text x="480" y="30" font-size="14" fill="var(--accent)" text-anchor="middle">:other-project:/abc/xyz.txt（よそ）</text>
+<rect x="400" y="50" width="180" height="50" rx="8" fill="url(#g-p260923-21-box)"/>
+<text x="490" y="80" font-size="13" fill="#fff" text-anchor="middle">自分のproject</text>
+<line x1="490" y1="100" x2="490" y2="130" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-21)"/>
+<rect x="410" y="130" width="160" height="40" rx="8" fill="url(#g-p260923-21-box)"/>
+<text x="490" y="155" font-size="12" fill="#fff" text-anchor="middle">hub（2.2節の階層）</text>
+<line x1="490" y1="170" x2="490" y2="195" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-21)"/>
+<text x="490" y="210" font-size="12" fill="var(--accent)" text-anchor="middle">other-project の abc/xyz.txt</text>
+</svg>
+<p><code>::</code> は自分のプロジェクトルートを起点にローカルだけで解決し、<code>:project-id:</code> はhubを経由してよそのプロジェクトへ届く。書き分けそのものが「hubを経由するかどうか」の目印になる。</p>
+
+<h2>2.2 解決の仕組み: 階層状に並んだhubだけを参照先にする</h2>
+<p>hubは1つではなく、置き場所ごとに3段の階層を作る。<strong>それぞれの段がhubであることは変わらず、参照先がhubだけである原則（ローカルキャッシュを持たない）も変わらない</strong>。段が増えるのは、どのhubが答えを知っているかが置き場所によって違うため。</p>
+<table>
+<tr><th>段</th><th>役割</th><th>知っている範囲</th></tr>
+<tr><td>PC内hub</td><td>そのPC上で動く複数プロジェクト・複数instance用</td><td>同じPC内のproject_idだけ</td></tr>
+<tr><td>LAN内hub</td><td>同じ拠点（局所グループ）用</td><td>そのLANに参加している各PCのproject_id</td></tr>
+<tr><td>クラウドhub</td><td>拠点をまたぐ全体用</td><td>すべてのLAN・PCから登録された、拠点をまたいで参照したいproject_id</td></tr>
+</table>
+<pre><code class="language-text">:project-id: を見たツールは、まず自分のPC内hubに問い合わせる
+  → PC内hubが知っていれば、そこで解決が終わる
+  → 知らなければ、PC内hubがLAN内hubへ問い合わせを引き継ぐ
+  → LAN内hubも知らなければ、クラウドhubへ問い合わせを引き継ぐ
+  → どの段も知らなければ「解決できない」と返す
+</code></pre>
+<div class="callout"><strong>ローカルキャッシュは持たない。</strong>「解決先がhubだけ」という原則は階層になっても変わらない。上位のhubへ引き継ぐのは問い合わせの中継であって、下位が上位の答えを覚えておく仕組みではない。単純さと引き換えに、途中の段が落ちていればそこから先は解決できない。閉域網ではクラウドhubに引き継ぐ段そのものが無い（PC内hub・LAN内hubだけで完結する）ため、1章の「ネット接続に依存しない」原則とも矛盾しない。</div>
+
+<h3>2.2.1 4つの場合分け</h3>
+
+<h4>a. 同一PC内だけで完結する場合</h4>
+<svg viewBox="0 0 640 260" style="max-width: 100%; height: auto;">
+<defs>
+<linearGradient id="g-p260923-2a-pc" x1="0" y1="1" x2="0" y2="0">
+<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/>
+</linearGradient>
+<marker id="arrow-p260923-2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+</marker>
+</defs>
+<rect x="20" y="20" width="600" height="220" rx="10" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="30" y="45" font-size="14" fill="var(--accent)">PC（1台）</text>
+<rect x="60" y="70" width="160" height="60" rx="8" fill="url(#g-p260923-2a-pc)"/>
+<text x="140" y="105" font-size="14" fill="#fff" text-anchor="middle">project-a</text>
+<rect x="420" y="70" width="160" height="60" rx="8" fill="url(#g-p260923-2a-pc)"/>
+<text x="500" y="105" font-size="14" fill="#fff" text-anchor="middle">project-b</text>
+<rect x="220" y="170" width="200" height="60" rx="8" fill="url(#g-p260923-2a-pc)"/>
+<text x="320" y="205" font-size="14" fill="#fff" text-anchor="middle">PC内hub</text>
+<line x1="150" y1="130" x2="290" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2a)"/>
+<line x1="490" y1="130" x2="360" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2a)"/>
+</svg>
+<p>同じPC上の複数プロジェクトが、PC内hubだけで <code>:project-id:</code> を解決する。LAN・クラウドへは問い合わせを引き継がない。</p>
+
+<h4>b. LAN内（局所グループ）にまたがる場合</h4>
+<svg viewBox="0 0 640 260" style="max-width: 100%; height: auto;">
+<defs>
+<linearGradient id="g-p260923-2b-pc" x1="0" y1="1" x2="0" y2="0">
+<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/>
+</linearGradient>
+<marker id="arrow-p260923-2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+</marker>
+</defs>
+<rect x="20" y="20" width="600" height="220" rx="10" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="30" y="45" font-size="14" fill="var(--accent)">LAN（同じ拠点）</text>
+<rect x="60" y="70" width="150" height="50" rx="8" fill="url(#g-p260923-2b-pc)"/>
+<text x="135" y="100" font-size="13" fill="#fff" text-anchor="middle">PC-1内hub</text>
+<rect x="430" y="70" width="150" height="50" rx="8" fill="url(#g-p260923-2b-pc)"/>
+<text x="505" y="100" font-size="13" fill="#fff" text-anchor="middle">PC-2内hub</text>
+<rect x="220" y="170" width="200" height="60" rx="8" fill="url(#g-p260923-2b-pc)"/>
+<text x="320" y="205" font-size="14" fill="#fff" text-anchor="middle">LAN内hub</text>
+<line x1="150" y1="120" x2="290" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2b)"/>
+<line x1="490" y1="120" x2="360" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2b)"/>
+</svg>
+<p>PC-1が知らない <code>:project-id:</code> を、PC内hubがLAN内hubへ問い合わせる。LAN内で完結し、クラウドへは出ない。</p>
+
+<h4>c. クラウドを介して拠点をまたぐ場合</h4>
+<svg viewBox="0 0 640 300" style="max-width: 100%; height: auto;">
+<defs>
+<linearGradient id="g-p260923-2c-pc" x1="0" y1="1" x2="0" y2="0">
+<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/>
+</linearGradient>
+<marker id="arrow-p260923-2c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+</marker>
+</defs>
+<rect x="240" y="20" width="160" height="50" rx="8" fill="url(#g-p260923-2c-pc)"/>
+<text x="320" y="50" font-size="14" fill="#fff" text-anchor="middle">クラウドhub</text>
+<rect x="20" y="120" width="260" height="160" rx="10" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="30" y="145" font-size="13" fill="var(--accent)">拠点1（LAN）</text>
+<rect x="50" y="160" width="90" height="45" rx="8" fill="url(#g-p260923-2c-pc)"/>
+<text x="95" y="188" font-size="11" fill="#fff" text-anchor="middle">PC内hub</text>
+<rect x="150" y="215" width="110" height="45" rx="8" fill="url(#g-p260923-2c-pc)"/>
+<text x="205" y="243" font-size="12" fill="#fff" text-anchor="middle">LAN内hub</text>
+<rect x="360" y="120" width="260" height="160" rx="10" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="370" y="145" font-size="13" fill="var(--accent)">拠点2（LAN）</text>
+<rect x="480" y="160" width="90" height="45" rx="8" fill="url(#g-p260923-2c-pc)"/>
+<text x="525" y="188" font-size="11" fill="#fff" text-anchor="middle">PC内hub</text>
+<rect x="370" y="215" width="110" height="45" rx="8" fill="url(#g-p260923-2c-pc)"/>
+<text x="425" y="243" font-size="12" fill="#fff" text-anchor="middle">LAN内hub</text>
+<line x1="95" y1="205" x2="180" y2="215" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2c)"/>
+<line x1="525" y1="205" x2="440" y2="215" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2c)"/>
+<line x1="230" y1="215" x2="280" y2="70" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2c)"/>
+<line x1="400" y1="215" x2="360" y2="70" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2c)"/>
+</svg>
+<p>拠点1のLAN内hubも知らない場合だけ、クラウドhubへ問い合わせを引き継ぐ。拠点をまたいだ参照はここで初めて解決する。</p>
+
+<h4>d. 閉域網（インターネット非接続）の場合</h4>
+<svg viewBox="0 0 640 260" style="max-width: 100%; height: auto;">
+<defs>
+<linearGradient id="g-p260923-2d-pc" x1="0" y1="1" x2="0" y2="0">
+<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent2)"/>
+</linearGradient>
+<marker id="arrow-p260923-2d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+</marker>
+</defs>
+<rect x="20" y="20" width="600" height="220" rx="10" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="30" y="45" font-size="14" fill="var(--accent)">閉域網（インターネット非接続）</text>
+<rect x="60" y="70" width="150" height="50" rx="8" fill="url(#g-p260923-2d-pc)"/>
+<text x="135" y="100" font-size="13" fill="#fff" text-anchor="middle">PC-1内hub</text>
+<rect x="430" y="70" width="150" height="50" rx="8" fill="url(#g-p260923-2d-pc)"/>
+<text x="505" y="100" font-size="13" fill="#fff" text-anchor="middle">PC-2内hub</text>
+<rect x="220" y="170" width="200" height="60" rx="8" fill="url(#g-p260923-2d-pc)"/>
+<text x="320" y="205" font-size="14" fill="#fff" text-anchor="middle">LAN内hub</text>
+<line x1="150" y1="120" x2="290" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2d)"/>
+<line x1="490" y1="120" x2="360" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow-p260923-2d)"/>
+<text x="320" y="30" font-size="12" fill="var(--accent)" text-anchor="middle">クラウドhubへの経路そのものが無い</text>
+</svg>
+<p>見た目はbと同じだが、<strong>クラウドhubへ引き継ぐ経路自体が存在しない</strong>。LAN内hubが知らなければ、そこで「解決できない」となる。外部の認証局・SaaS・DNSに頼らない前提（全体構想1.3節）と合っている。</p>
+
+<h2>2.3 既存の番号体系を汎用IDとして引き継ぐ</h2>
+<p>「ファイル名」ルールが持つ <code>xYYMMDD-NN</code>（種別1文字＋日付＋36進数2桁）を、ファイル名だけでなく、<strong>プロジェクトをまたいで参照し合える汎用ID</strong>として引き継ぐ。</p>
+<table>
+<tr><th>x</th><th>種別</th><th>備考</th></tr>
+<tr><td><code>p</code></td><td>plan（計画）</td><td>既存のまま</td></tr>
+<tr><td><code>r</code></td><td>research（調査）</td><td>既存のまま</td></tr>
+<tr><td><code>q</code></td><td>quality assurance（品質レビュー）</td><td>既存のまま</td></tr>
+<tr><td><code>i</code></td><td>issue（課題）</td><td>既存のまま</td></tr>
+<tr><td><code>m</code></td><td>message（チャットの発言）</td><td>新設。ai-chat-liteの <code>msg_seq</code>（例: <code>#921</code>）を、日付入りの恒久的なIDに焼き直す</td></tr>
+<tr><td><code>t</code></td><td>test（テスト）</td><td>新設</td></tr>
+</table>
+
+<div class="callout"><strong>これは共通ルールの変更を伴う。</strong><code>m</code>（message）・<code>t</code>（test）の新設は、「ファイル名」節の種別一覧への追記になる。<strong>この場に文言を提示して確認を得てから、「反映して」の指示で共通ルールへ書き込む</strong>（ルールの更新タイミングに従う）。本書ではまず、この番号体系をプロジェクトをまたいだ参照にどう使うかの設計だけを進める。</div>
+
+<h3>2.3.1 プロジェクトをまたいだ参照</h3>
+<p>2.1節の記法にそのまま乗せる。IDの前に何も付かなければ自分のプロジェクト内、<code>:project-id:</code> を前に置けばよそのプロジェクトのIDを指す。</p>
+<pre><code class="language-text">i260923-01                     自分のプロジェクトの課題（従来通り、接頭辞なし）
+:other-project:i260923-02      よそのプロジェクトの課題
+:other-project:m260923-01      よそのプロジェクトのチャット発言（日付入りIDに焼き直したもの）
+</code></pre>
+<p><code>::i260923-01</code> という書き方も文法上は成立するが、自分のプロジェクト内なら接頭辞なしの <code>i260923-01</code> で足りるため、通常は使わない。</p>
+
+<h3>2.3.2 依存・親子関係</h3>
+<p>課題（<code>i</code>）同士は、プロジェクトをまたいでも「依存」「親子」の関係を持てるようにする。参照先は2.3.1のID（自分／よその両方）をそのまま使う。</p>
+<table>
+<tr><th>関係</th><th>書き方の例</th></tr>
+<tr><td>依存（このIDが片付くまで着手できない）</td><td>depends-on: <code>:other-project:i260910-04</code></td></tr>
+<tr><td>親子（このIDはあるIDの一部）</td><td>parent: <code>i260920-01</code></td></tr>
+</table>
+<div class="callout"><strong>データモデルの詳細は本書の対象外。</strong>「7. チケットアダプタ」フェーズの計画時に、issues.html側の表現方法（HTMLにどう埋め込むか）とhub側の保持方法を詰める。ここでは「プロジェクトをまたいだ依存・親子を持てる」という要件だけを残す。</div>
+
+<h2>2.4 リソースの種類とバックエンド</h2>
+<p>hub が project_id ごとに持つレコードは、リソースの種類（file・chat・ticket）ごとに「どのbackendの、どこにあるか」を1件持つ。</p>
+<table>
+<tr><th>種類</th><th>backendの例</th><th>「どこ」の中身</th></tr>
+<tr><td>file</td><td>ローカルディスク／LAN共有／クラウドストレージ</td><td>絶対パス、UNCパス、または取得用のURL</td></tr>
+<tr><td>chat</td><td>ai-chat-lite（ローカル）／Mattermost（閉域網）／クラウドのチャット</td><td>接続先（ポート・URL）とルームID</td></tr>
+<tr><td>ticket</td><td>issues.html（ローカル）／Redmine・GitLab（閉域網）／GitHub（インターネット）</td><td>APIエンドポイントまたはファイルパス、プロジェクト識別子</td></tr>
+</table>
+<p>ツール側（<code>text read</code> 相当のもの、<code>aichat</code>、チケットクライアント）は、hubから返った種類・backend名を見て、対応するアダプタ（file/chat/ticket それぞれの実装）に処理を渡す。<strong>アダプタを増やせばbackendを増やせる</strong>構造にし、Mattermost・Redmine・GitLab・GitHubへの対応はそれぞれ個別のアダプタとして後から積む。</p>
+
+<h3>2.4.1 chatとticketは別系統のまま、相互参照だけ結ぶ</h3>
+<p>chatとticketを1つのシステムに統合はしない（backendが違いすぎるため）。その代わり、<strong>2.3節のID体系（<code>m</code>・<code>i</code>）を共通の橋にして、互いを参照し合えるようにする</strong>。</p>
+<pre><code class="language-text">チャットの発言中に i260923-01 と書けば、その課題を指す
+課題（issues.html）の本文中に m260923-05 と書けば、その発言を指す
+</code></pre>
+<p>アダプタ側は、本文中に現れた <code>xYYMMDD-NN</code> 形式の文字列を認識し、対応する種類（<code>m</code>ならchat、<code>i</code>ならticket）へのリンクとして扱う。統合されたデータベースを作るのではなく、<strong>互いのIDを本文に書けば、表示側がリンクとして解釈する</strong>という緩い結びつけにする。</p>
+
+<h3>2.4.2 Web表示があれば、参照結果にリンクを添える</h3>
+<p><code>text read</code>（2.8節）などでリソースを取得したとき、そのbackendにWeb版（GitHub Pages・GitHubのファイル表示・チャットのWeb UI等）があるなら、<strong>取得した内容とあわせてWeb版のURLも返す</strong>。人が結果を見て、そのままブラウザで開けるようにするため。</p>
+<table>
+<tr><th>種類</th><th>Web版の例</th></tr>
+<tr><td>file</td><td>GitHub上のファイル表示URL（該当ブランチ・パス）</td></tr>
+<tr><td>chat</td><td>ai-chat-liteやMattermostのWeb UIで、その発言を直接指すURL（あれば）</td></tr>
+<tr><td>ticket</td><td>GitHub Issues・Redmine・GitLabのチケット画面URL</td></tr>
+</table>
+<div class="callout"><strong>Web版が無いbackendもある。</strong>ローカルファイル・ローカルのissues.htmlのようにWeb版を持たない場合は、URLを付けずに内容だけ返す。「あれば添える」であり、無いことを異常とはしない。</div>
+
+<h2>2.5 ai-agent-manager との関係</h2>
+<p>構想中の <code>ai-agent-manager</code>（エージェントの起動・終了ツール）も、project_id からその実体（ローカルパスなど）を知る必要がある点で、file リソース解決の利用者の1つになる。<strong>ai-agent-manager 自体の設計は本書の対象外</strong>とし、リソース抽象化の消費者として名前だけ触れる。</p>
+
+<h2>2.6 同一 project_id が複数PCに存在する場合</h2>
+<p><code>ai-agent-tools</code>・<code>PlayWright</code> のような共有ツールは、各PCにコピーを置いて使う。開発する場所は通常1箇所に決まるが、git・GitHub（GitLab）を使えば複数拠点で並行して開発することもあり得る。<strong>project_id をhubへ登録する時点で、この曖昧さに向き合う必要がある</strong>。</p>
+
+<h3>2.6.1 既定: 申請制（先着順登録）</h3>
+<p>project_id は hub のスコープ内で一意に保つ。<strong>先に登録した側が正規（canonical）になり、後から同じ project_id を登録しようとすると拒否される</strong>。拒否された側は、それが誤りなのか、それとも意図した並行開発なのかを人が判断する。</p>
+
+<h3>2.6.2 特殊: 複数拠点での並行開発</h3>
+<p>意図して同じプロジェクトを複数拠点で並行開発する場合だけ、<code>project-id/site-id</code> の形で明示的に区別して登録する。<code>@</code>はチャットの宛先指定（<code>@project-id</code>）と重複するため使わない。</p>
+<pre><code class="language-text">:ai-agent-tools:                  既定では、登録済みの正規（canonical）1件に解決される
+:ai-agent-tools/home-pc:          home-pc拠点の版を名指しする
+:ai-agent-tools/office-pc:        office-pc拠点の版を名指しする
+:ai-agent-tools/home-pc:/README.html   site指定とリソースパスを両方書いた例
+</code></pre>
+<div class="callout"><strong>区切りは、閉じる <code>:</code> の位置で決まる。</strong> <code>site-id</code> は閉じコロンより内側、リソースパスは閉じコロンより外側の <code>/path</code> になる。<code>/</code> を2箇所で使うため人の目には詰まって見えるが、閉じコロンがある限り機械的には曖昧にならない。</div>
+<div class="callout"><strong><code>/site-id</code> は常には付けない。</strong>並行開発が要らない大多数のプロジェクトでは、<code>:project-id:</code> だけで済む。site識別子は「特殊な場合の逃げ道」であり、既定の書式を複雑にしない。</div>
+
+<h2>2.7 認証・認可</h2>
+<p><a href="p260919-01-全体構想.html">全体構想</a>のMVPが発行するトークン（instance_id・project_idを含む）を、そのまま認証（このリクエストは誰から来たか）の土台として使う。ここで新しく詰めるのは、<strong>認可（そのリクエストを許してよいか）</strong>の方である。</p>
+
+<h3>2.7.1 アクセスの方向</h3>
+<p>すべてのリソースアクセスを「requester（要求する側のinstance/project）→ target（リソースを持つ側のproject）」の1方向として扱う。targetが許可しない限り、requesterは何も取得できない（既定拒否）。</p>
+
+<h3>2.7.2 トークンの中身と有効期限</h3>
+<table>
+<tr><th>項目</th><th>内容</th></tr>
+<tr><td>requester</td><td>instance_id・project_id・agent_type（全体構想2.2〜2.3節のもの）</td></tr>
+<tr><td>scope</td><td>対象のtarget project_id、リソース種別（file/chat/ticket）、権限レベル（read/write）</td></tr>
+<tr><td>有効期限</td><td>短命（分〜時間の単位）。切れたら再度チャレンジ・レスポンスからやり直す</td></tr>
+</table>
+<p>トークンは「targetのリソースに対する、この権限だけ」に絞って発行する。requesterのidentity用トークン（全体構想3.3節の<code>tokens</code>）とは別に、<strong>アクセスのたびに、その場限りのscope付きトークンを発行し直す</strong>形にする。</p>
+
+<h3>2.7.3 誰が許可するか: project単位のACL＋所有者userの一括許可</h3>
+<p>認可の主体は<strong>project単位</strong>とする。各targetプロジェクトは、自分のリソースについて「どのproject_idに、どの権限を許すか」という許可リストをhubに登録する。既定は拒否で、リストに無いrequesterは通さない。</p>
+<p>これとは別に、<strong>「所有者user」という概念を新設する</strong>。projectは1人の所有者user（人間）に紐づき、user は複数のprojectを所有できる。<strong>同じuserが所有するprojectどうしは、ACLに個別登録しなくても一括で許可される</strong>。他人が所有するprojectへのアクセスは、targetのACLに明示登録された場合だけ許される。</p>
+<table>
+<tr><th>ケース</th><th>判定</th></tr>
+<tr><td>requesterとtargetの所有者userが同じ</td><td>ACL登録が無くても許可（一括許可）</td></tr>
+<tr><td>requesterとtargetの所有者userが違う</td><td>targetのACLに明示登録されている場合だけ許可</td></tr>
+</table>
+<div class="callout"><strong>1人が多くのprojectを持つ、いまの実態に合わせた既定。</strong>同一人物が運営する複数プロジェクト間の連携（例: このai-agent-support自身とai-chat-lite）では、いちいちACLを書かずに済む。複数人・複数組織にまたがる連携が要る場面だけ、targetプロジェクト側でACLを明示する。</div>
+
+<h3>2.7.4 group: userとprojectをまとめる単位</h3>
+<p>1件ずつのACL登録・1人だけの所有者では足りない場面がある。<strong>複数人のチームが共同でプロジェクトを所有する</strong>、<strong>複数プロジェクトへまとめて権限を与えたい</strong>といったケースのため、<code>group</code>を新設する。</p>
+<table>
+<tr><th>使い方</th><th>内容</th></tr>
+<tr><td>所有者をgroupにする</td><td>projectの所有者を単一userではなくgroupにできる。groupに属するuserは誰でも、そのprojectを「自分の所有物」として一括許可の対象にできる（2.7.3の判定基準が「同じuser」から「同じgroupに属する」に拡張される）</td></tr>
+<tr><td>ACLの許可先をgroupにする</td><td>ACLの<code>allowed</code>にproject_idだけでなくgroup_idも指定できる。1件のACL登録で、そのgroupに属する全projectへ許可が及ぶ</td></tr>
+</table>
+<div class="callout"><strong>groupはuserとprojectの両方を束ねられる。</strong>「このチームのuser全員」「この一式のproject全部」のどちらも同じgroupの仕組みで表す。個別登録（project単位）・一括登録（所有者user単位）・チーム単位（group）の3段階を用意することになる。</div>
+
+<h3>2.7.5 データモデルへの追加</h3>
+<table>
+<tr><th>テーブル</th><th>追加する列</th></tr>
+<tr><td>identities（全体構想3.3節）</td><td>owner_ref（所有者。user_idまたはgroup_idのどちらか）</td></tr>
+<tr><td>acl（新設）</td><td>target_project_id, allowed_ref（project_idまたはgroup_id）, resource_type, permission, granted_at</td></tr>
+<tr><td>groups（新設）</td><td>group_id, name</td></tr>
+<tr><td>group_members（新設）</td><td>group_id, member_ref（user_idまたはproject_id）</td></tr>
+</table>
+
+<h2>2.8 想定するCLI: <code>text</code> ファミリー</h2>
+<p>2.1〜2.4節の記法・解決の仕組みを、実際に使うための道具を用意する。既存の <code>text</code>（ai-agent-tools。read/find/edit/write の4つ）を置き換える想定なので、<strong>引数の渡し方は既存の <code>text</code> にそのまま揃え</strong>、<code>::</code>・<code>:project-id:</code> の両方を受け付けられるように対象だけを広げる。読む（<code>read</code>）と探す（<code>find</code>）は既存どおり別コマンドのままにし、<code>read</code>に検索を統合しない。</p>
+<pre><code class="language-powershell">text list ::/notes                                 # 自分のプロジェクト配下を一覧（新設。ls相当）
+text list :other-project:/notes --find "計画"       # よそのプロジェクトを絞り込んで一覧
+text read ::/README.html                           # 自分のファイルを読む（既存read相当）
+text read ::/README.html --lines 3-5               # 行範囲を指定して読む（既存read相当）
+text read "::/README.html#L10-20"                  # GitLab/GitHub風の行範囲アンカーでも同じ意味
+text read :other-project:/notes/40_issues/issues.html
+text find "計画" ::/notes --recurse                 # 自分のプロジェクト配下を探す（既存find相当）
+text find "計画" :other-project:/notes --recurse --regex --invert   # 正規表現・不一致行（新設）
+text write ::/tmp/out.txt --in tmp/body.txt        # 新規作成・上書き（既存write相当。第2引数／標準入力も可）
+text edit :other-project:/README.html --old "旧" --new "新"   # 置換（既存edit相当）
+text edit ::/README.html --lines 3-3 --digest 9f2a1c33 --new "..."   # 行範囲＋合言葉（既存edit相当）
+</code></pre>
+<table>
+<tr><th>コマンド</th><th>対応する既存操作</th><th>備考</th></tr>
+<tr><td><code>text list</code></td><td>（新設。既存textには無い）</td><td><code>ls</code> / <code>Get-ChildItem</code>相当。<code>--find</code> で絞り込み、<code>--recurse</code> で再帰</td></tr>
+<tr><td><code>text read</code></td><td>既存の <code>text read</code>（そのまま）</td><td>行範囲は既存どおり <code>--lines</code>。加えて<code>#L1-20</code>アンカー（2.1.2節）も同じ意味として受け付ける。検索は行わない（<code>find</code>に分離したまま）</td></tr>
+<tr><td><code>text find</code></td><td>既存の <code>text find</code>（そのまま）</td><td><code>--recurse</code>・<code>--include</code>は既存どおり。<code>--regex</code>（正規表現＝egrep相当）・<code>--invert</code>（不一致行＝egrep -v相当）は新設の拡張</td></tr>
+<tr><td><code>text write</code></td><td>既存の <code>text write</code>（そのまま）</td><td>中身は既存どおり <code>--in &lt;path&gt;</code>・第2引数・標準入力のいずれかで渡す。<code>--content</code>のような新しい渡し方は増やさない</td></tr>
+<tr><td><code>text edit</code></td><td>既存の <code>text edit</code>（そのまま）</td><td><code>--old</code>/<code>--new</code>（中身で指す）または<code>--lines</code>+<code>--digest</code>+<code>--new</code>（行範囲＋合言葉）は既存どおり。<code>--regex</code>を付けると<code>--old</code>を正規表現として扱う（新設の拡張）</td></tr>
+</table>
+<div class="callout"><strong>正規表現の方言は1つに決める。</strong>PowerShell・.NET・JavaScriptなど、正規表現の書き方は処理系によって微妙に違う。<code>--regex</code>がどの方言を指すかは、実装フェーズの計画時に決める（本書では「対応が要る」ことだけを残す）。</div>
+<div class="callout"><strong>write・editは書き込み権限が要る。</strong>2.7節のACLで <code>permission: write</code> を持たない相手には拒否する。readより一段厳しく扱う。</div>
+<div class="callout callout-important"><strong>既存の <code>text</code>（ai-agent-tools）との関係。</strong>ai-agent-toolsは既にローカルのSJIS安全な読み書き用として<code>text read</code>・<code>text find</code>・<code>text edit</code>・<code>text write</code>を持っている。本書の<code>text</code>ファミリーは<strong>これを置き換える想定</strong>であり、共存を前提にした別名づけはしない。既存コマンドの引数の渡し方（上表）はそのまま踏襲し、<code>::</code>・<code>:project-id:</code>を受け付けられるように対象だけを広げる。同名のコマンドをPATH上に2つ並べたまま並行運用すると、先勝ち解決でどちらが動いたか区別できなくなる問題が既に他プロジェクトの移行（check-contrastの移行、i260924-05参照）で実際に起きているため、置き換えが完了するまでの間はai-agent-tools側の実装を残さない（両方を同時にPATHへ置かない）。実装をどちらのプロジェクトに置くか、置き換えの手順・移行期間の扱いは、このフェーズの計画時にai-agent-tools側と調整する（他プロジェクトのファイルは直さない原則に従う）。</div>
+</section>
+
+<section class="ch03">
+<h1>ロードマップとの関係</h1>
+
+<p><a href="p260919-01-全体構想.html">全体構想</a>のロードマップにあった「5. 外部連携（Mattermost）」「6. チケット管理」は、本構想の <strong>アダプタ</strong> として位置づけ直す。全体構想の該当箇所は本書へのリンク参照に更新済み（本書のこの表が正）。</p>
+<table>
+<tr><th>順番</th><th>フェーズ</th><th>内容</th></tr>
+<tr><td class="num">1〜4</td><td>（全体構想のまま）</td><td>認証基盤 → メッセージング → ファイル受け渡し → LAN/クラウド対応</td></tr>
+<tr><td class="num">5</td><td>リソース抽象化基盤</td><td>本書の内容。<code>:project-id:/path</code> の解決をhubに実装し、file アダプタ（ローカル/LAN/クラウド）をまず1つ用意する</td></tr>
+<tr><td class="num">6</td><td>チャットアダプタ</td><td>ai-chat-lite（既存）・Mattermost・クラウドチャットのアダプタを順に足す</td></tr>
+<tr><td class="num">7</td><td>チケットアダプタ</td><td>issues.html（既存）・Redmine・GitLab・GitHubのアダプタを順に足す</td></tr>
+</table>
+
+<div class="callout"><strong>今回はここまで。</strong>実装に入る前に、各アダプタのフェーズごとに個別の計画書を立てる（「機能を追加・変更するときの順序」に従う）。</div>
+</section>
+
+</div>
+<footer><a class="doclink" href="../../README.html">⌂</a></footer>
+</body>
+</html>
