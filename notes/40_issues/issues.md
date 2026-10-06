@@ -2,7 +2,7 @@
 
 これから解決すること
 
-> 📅 作成: 2026-09-24 / 更新: 2026-09-24
+> 📅 作成: 2026-09-24 / 更新: 2026-10-05
 
 [⌂](../../README.md)
 
@@ -102,6 +102,24 @@ p260919-01の2.2節はinstance_idの区切り、p260923-01の2.1.2節は行範�
 対応: 記法自体は変えず、p260919-01の2.2節に「この#は区切り文字であり、行範囲指定の#L1-20とは別用法。両者が同じ記述の中で混在することはない」旨の注記を追加。
 
 やること: 済（報告元確認 #1106）
+
+</details>
+
+## 2. 自分で見つけた課題
+
+<details>
+<summary>i261004-01 `aichat waiters` が、`timeout` でラップして起動した自分の待受けを二重計上する ✅ <strong>済</strong></summary>
+
+`timeout 7200 aichat wait :ai-agent-support: -p 8787 -r public` を `run_in_background` で起動した状態で `aichat waiters` を実行すると、自分（ai-agent-support）が2本として表示される。
+
+- 1本は張り方 `aichat`、ルーム `public`、pidは実際のaichatプロセス（`ps aux`で確認済み）。
+- もう1本は張り方 `bash`、ルーム `public'`（末尾にクォートが混入し壊れている）、pidは`timeout`ラッパーの親bashプロセス（同じく`ps aux`で確認。実際のaichat接続ではない）。
+- 同時刻に起動した他プロジェクト（ai-agent-rules等）のaichatプロセスにも同様の親bashが存在するが、そちらは二重計上されていない。自分のIDに対してだけ、ローカルプロセスの自己検出ロジックが働き、`timeout`ラッパーのコマンドライン文字列から誤ってルーム名を抽出していると見られる。
+- 共通ルール「ai-chat-lite（AI間チャット）の利用」は「数えるのは aichat waiters。プロセスを自分で検索しない」としており、waiters自体がこの種の誤検出をすると、二重待受けの判定を誤る恐れがある。
+
+対応（ai-chat-lite側）: waitersが末端に数える対象を待受けの実体（aichat・aichat-rs・node・bun）だけに限定し、bash・timeout・pwsh等のラッパーは親子がつながっていなくても数えない形に修正（b126334でpush済み）。手元のaichat waitersでai-agent-supportが1本・張り方aichatのみになり、bash・public'の行が出ないことを確認済み（#1355）。
+
+やること: 済（ai-chat-lite側修正・自分で確認済み。#1346, #1354, #1355）
 
 </details>
 

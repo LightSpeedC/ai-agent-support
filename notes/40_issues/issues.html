@@ -110,7 +110,7 @@ footer {
 <div class="inner">
 <h1>ai-agent-support 課題</h1>
 <div class="lead">これから解決すること</div>
-<div class="date">📅 作成: 2026-09-24 / 更新: 2026-09-24</div>
+<div class="date">📅 作成: 2026-09-24 / 更新: 2026-10-05</div>
 </div>
 </div>
 <div class="wrap">
@@ -194,6 +194,26 @@ p260923-01 の2.8節が text list・text read・text write・text edit を挙げ
 <p>p260919-01の2.2節はinstance_idの区切り、p260923-01の2.1.2節は行範囲の指定。どちらも:project-id:と組み合わせて書かれるため紛らわしい。</p>
 <p>対応: 記法自体は変えず、p260919-01の2.2節に「この#は区切り文字であり、行範囲指定の#L1-20とは別用法。両者が同じ記述の中で混在することはない」旨の注記を追加。</p>
 <p>やること: 済（報告元確認 #1106）</p>
+</details>
+
+</section>
+
+<section class="ch02" id="ch02">
+<h1>自分で見つけた課題</h1>
+
+<details open>
+<summary><span class="no">i261004-01</span> <code>aichat waiters</code> が、<code>timeout</code> でラップして起動した自分の待受けを二重計上する <span class="badge b-ok">済</span></summary>
+<p>
+<code>timeout 7200 aichat wait :ai-agent-support: -p 8787 -r public</code> を <code>run_in_background</code> で起動した状態で <code>aichat waiters</code> を実行すると、自分（ai-agent-support）が2本として表示される。
+</p>
+<ul>
+<li>1本は張り方 <code>aichat</code>、ルーム <code>public</code>、pidは実際のaichatプロセス（<code>ps aux</code>で確認済み）。</li>
+<li>もう1本は張り方 <code>bash</code>、ルーム <code>public'</code>（末尾にクォートが混入し壊れている）、pidは<code>timeout</code>ラッパーの親bashプロセス（同じく<code>ps aux</code>で確認。実際のaichat接続ではない）。</li>
+<li>同時刻に起動した他プロジェクト（ai-agent-rules等）のaichatプロセスにも同様の親bashが存在するが、そちらは二重計上されていない。自分のIDに対してだけ、ローカルプロセスの自己検出ロジックが働き、<code>timeout</code>ラッパーのコマンドライン文字列から誤ってルーム名を抽出していると見られる。</li>
+<li>共通ルール「ai-chat-lite（AI間チャット）の利用」は「数えるのは aichat waiters。プロセスを自分で検索しない」としており、waiters自体がこの種の誤検出をすると、二重待受けの判定を誤る恐れがある。</li>
+</ul>
+<p>対応（ai-chat-lite側）: waitersが末端に数える対象を待受けの実体（aichat・aichat-rs・node・bun）だけに限定し、bash・timeout・pwsh等のラッパーは親子がつながっていなくても数えない形に修正（b126334でpush済み）。手元のaichat waitersでai-agent-supportが1本・張り方aichatのみになり、bash・public'の行が出ないことを確認済み（#1355）。</p>
+<p>やること: 済（ai-chat-lite側修正・自分で確認済み。#1346, #1354, #1355）</p>
 </details>
 
 </section>

@@ -81,7 +81,7 @@ footer { padding: 18px 30px 30px; text-align: left; color: var(--ink-soft); font
 </code></pre>
 <table>
 <tr><th>記法</th><th>指す先</th><th>解決方法</th></tr>
-<tr><td><code>::/path</code></td><td>自分のプロジェクトルートからの相対パス</td><td><strong>hubに聞かず、ローカルだけで解決する</strong>。従来の <code>N:/my-project/abc/xyz.txt</code>・<code>C:/work/my-project/abc/xyz.txt</code> のように置き場所（ドライブ・subst・実体パス）ごとに書き分けていたものを、<code>::/abc/xyz.txt</code> の1通りに統一する</td></tr>
+<tr><td><code>::/path</code></td><td>自分のプロジェクトルートからの相対パス</td><td><strong>hubに聞かず、ローカルだけで解決する</strong>。従来の <code>X:/my-project/abc/xyz.txt</code>・<code>C:/work/my-project/abc/xyz.txt</code> のように置き場所（ドライブ・subst・実体パス）ごとに書き分けていたものを、<code>::/abc/xyz.txt</code> の1通りに統一する</td></tr>
 <tr><td><code>:project-id:/path</code></td><td>よそのプロジェクトのリソース（file/chat/ticket）</td><td>hubに問い合わせて解決する（2.2節）</td></tr>
 </table>
 <div class="callout"><strong>chrootのように閉じ込める。</strong><code>::</code> は自分のプロジェクトルートを起点にし、そこから上には出られない。<code>::/../secret</code> のように <code>..</code> でルートの外へ出ようとする参照は、解決する側が正規化した時点で拒否する。<strong>「自分の外」を指したくなったら <code>::</code> ではなく <code>:project-id:</code> を使う</strong>、という書き分けそのものが、意図しない越境アクセスへの歯止めになる。</div>
